@@ -1,0 +1,27 @@
+# Data (too large for git)
+data/images/
+*.npy
+
+# Model checkpoints
+outputs/models/*.pth
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+.agents/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
