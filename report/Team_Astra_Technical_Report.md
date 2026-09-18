@@ -1,5 +1,5 @@
 # Team Astra: Mars HiRISE Anomaly Detection Report
-**Author:** , BE Group 2  
+ 
 **Event:** National Students' Space Challenge (NSSC 2026), IIT Kharagpur
 
 ---
