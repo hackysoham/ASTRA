@@ -61,6 +61,8 @@ $$L_{\text{total}} = \alpha \cdot L_{\text{MSE}} + \beta \cdot (1 - \text{SSIM})
 
 **v5 was selected as the final model** for Phases 2–3, achieving both the lowest reconstruction error (MSE) and the highest structural similarity (SSIM ≈ 0.95) among all versions trained to completion.
 
+Note: v2's MSE and SSIM appear numerically worse than v1's despite the added structural loss; this is likely attributable to early stopping (14 vs 49 epochs) combined with the two versions optimizing different loss objectives, making direct numeric comparison imperfect. Perceptual/qualitative improvement was still observed in reconstructions (sharper edges), as noted in the Engineering Changelog.
+
 <img width="1494" height="744" alt="image" src="https://github.com/user-attachments/assets/a048c84e-48e0-42b1-86c9-c87c8268d455" />
 
 
