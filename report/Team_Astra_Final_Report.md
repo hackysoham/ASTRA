@@ -51,6 +51,19 @@ $$L_{\text{total}} = \alpha \cdot L_{\text{MSE}} + \beta \cdot (1 - \text{SSIM})
 
 ### 2.3 Training Results
 
+
+| Version | Type | Latent Dim | Best Val Loss | Final MSE | Final SSIM Loss | Epochs |
+|---------|------|-----------|----------------|-----------|-------------------|--------|
+| v1 | CAE | 128 | 0.004646 | 0.004646 | 0.422971 | 49 |
+| v2 | CAE + BN | 128 | 0.274803 | 0.038159 | 0.511446 | 14 (early-stopped) |
+| v3 | CAE + LeakyReLU | 256 | 0.189463 | 0.004942 | 0.373983 | 31 |
+| v4 | VAE | 256 | *Not completed* — training diverged (KL term exploded on epoch 1); no checkpoint saved | | | |
+| v5 | β-VAE + Skip | 256 | 0.023862 | 0.000285 | 0.047439 | 50 |
+
+**v5 was selected as the final model** for Phases 2–3, based on its substantially lower final MSE and SSIM loss compared to all other completed versions.
+
+<img width="1494" height="744" alt="image" src="https://github.com/user-attachments/assets/a048c84e-48e0-42b1-86c9-c87c8268d455" />
+
 <img width="1494" height="744" alt="image" src="https://github.com/user-attachments/assets/a048c84e-48e0-42b1-86c9-c87c8268d455" />
 
 
@@ -93,7 +106,14 @@ per Iglewicz & Hoaglin (1993).
 #### Consensus Voting
 An image is flagged as anomalous if identified by **≥2 of 3** methods.
 
+
+Applying the consensus-voting procedure (≥2 of 3 methods) to v5's novelty scores over all 10,422 crops yielded:
+
+- **Effective threshold:** 0.211996
+- **Images exceeding threshold:** 70 (≈0.67% of the dataset)
+
 <img width="1590" height="498" alt="image" src="https://github.com/user-attachments/assets/91441ff0-82df-435b-a1f6-0cb892eb4c81" />
+
 
 
 ---
@@ -107,9 +127,15 @@ For each of the top-5 anomalous images (strictly exceeding the threshold):
 2. Compute per-pixel absolute error: E(i,j) = |X(i,j) - X̂(i,j)|
 3. Render as 3-panel figure: Original | Reconstruction | Error Heatmap (with `hot` colormap overlay)
 
+
 ### 4.2 Geological Hypothesis Report
 
+The top-5 images strictly exceeding the threshold were selected for heatmap analysis and hypothesis generation. Full per-image scores, error statistics, and physical hypotheses are documented in [`Geological_Analysis.md`](Geological_Analysis.md).
+
+**Notable finding:** all 5 top-ranked images share an identical novelty score (0.2510) and identical error-pattern classification ("Diffuse, uniform"). We investigated this and traced a likely contributing factor to `source_image_id` extraction in `isolation_forest.py`'s metadata-fusion step, which does not correctly match filenames to `source_image_metadata.csv` for this dataset's naming convention — meaning the metadata-fusion component of the feature vector may be constant across many crops. This does not invalidate the image-only anomaly detection (Phase 2's core requirement), but is flagged here as a known limitation of the optional metadata-fusion bonus.
+
 <img width="2236" height="788" alt="image" src="https://github.com/user-attachments/assets/93aa3fdd-939c-46e6-8e72-7abd9a2e089a" />
+
 
 ### 4.3 Error Pattern Classification
 
@@ -126,18 +152,47 @@ Our automated classifier analyzes error maps using:
 
 | # | Transition | Symptom | Diagnosis | Fix |
 |---|-----------|---------|-----------|-----|
-| 1 | Start → v1 | No baseline | Need starting architecture | 5-layer CAE, MSE, ReLU |
+| 1 | Start → v1 | No baseline | Need starting architecture | 4-layer CAE, MSE, ReLU |
 | 2 | v1 → v2 | Slow convergence, blurry | No normalization, MSE-only | +BatchNorm, +SSIM loss |
-| 3 | v2 → v3 | Disconnected latent space | Deterministic bottleneck | VAE + reparameterization |
-| 4 | v3 → v4 | Blurry fine textures | Narrow bottleneck, no skip paths | +Skip connections, dim=256 |
-| 5 | v4 → v5 | Posterior collapse, dead neurons | ReLU + fixed KL weight | +LeakyReLU, β-annealing |
+| 3 | v2 → v3 | Soft texture, dead ReLU units | 128-dim bottleneck under-capacity | +LeakyReLU, latent 128→256 |
+| 4 | v3 → v4 | Disconnected latent clusters | Deterministic bottleneck | VAE + reparameterization + KL |
+| 5 | v4 → v5 | KL instability / posterior collapse risk, blurry edges | Fixed KL weight, no high-freq pathway | +Skip connections, +β-annealing, +Sobel/MS-SSIM loss |
+
+**Note on v4:** training diverged on epoch 1 (KL term exploded to ~6×10⁸) due to an unclamped `logvar` in the reparameterization step; v4 was not retrained to completion given time constraints, so no v4 checkpoint or quantitative results exist. The architectural reasoning for this iteration is documented regardless in [`Engineering_Changelog.md`](Engineering_Changelog.md).
+
+**Note on v5:** despite β-annealing (max β=0.005), the final model's KL divergence converged to ≈0.0 — consistent with posterior collapse, where the encoder's `μ`/`logvar` outputs converge toward the prior and the latent code carries little information. This is documented as an open finding rather than a fully resolved issue.
 
 ### 5.2 Detailed Changelog
 
-*(See Phase 4 notebook for complete symptom→diagnosis→fix documentation)*
+#### Iteration 1: v1 — Baseline Convolutional Autoencoder (CAE)
+**Symptom:** No prior architecture existed; needed a minimum viable model to establish baseline reconstruction quality and bottleneck dimensions.
+**Diagnosis:** A standard encoder-decoder without normalization or advanced regularization was required as a starting point.
+**Fix:** 4-layer CAE (1→32→64→128→256), latent_dim=128, ReLU, MSE-only loss. Used `output_padding=1` on the final two decoder layers to recover the exact 227×227 shape.
+**Outcome:** Converged, but training was slow with unstable early gradients. Reconstructions were heavily blurred; t-SNE showed a highly deterministic, disjointed latent space.
 
----
+#### Iteration 2: v2 — Structural Loss Autoencoder
+**Symptom:** v1's reconstructions were overly smooth; identical MSE values corresponded to very different perceptual quality.
+**Diagnosis:** MSE penalizes pixels independently, with no incentive to preserve edges; lack of BatchNorm caused internal covariate shift.
+**Fix:** From-scratch differentiable SSIM loss (11×11 Gaussian windows), combined as MSE + SSIM. BatchNorm deliberately withheld to isolate the effect of the structural loss alone.
+**Outcome:** Sharper craters/dune ripples. Latent space remained unregularized — structurally similar inputs sometimes embedded far apart, adding noise to downstream Isolation Forest scoring.
 
+#### Iteration 3: v3 — Capacity-Optimized Autoencoder
+**Symptom:** Convergence still sub-optimal; model struggled to generalize across diverse terrain in the full ~10,000-image dataset.
+**Diagnosis:** 128-dim latent space was an information bottleneck; ReLU caused dead neurons in deep layers; no BatchNorm was slowing convergence.
+**Fix:** Deepened to 5 layers (1→32→64→128→256→512), latent_dim→256, ReLU→LeakyReLU(0.2), added BatchNorm2d after every conv layer.
+**Outcome:** Convergence sped up ~3×; dead-neuron problem eliminated; lower overall MSE. Latent space still deterministic — no probability distribution for robust novelty scoring yet.
+
+#### Iteration 4: v4 — Variational Autoencoder (VAE)
+**Symptom:** t-SNE/UMAP of v3's latent space showed disconnected clusters; interpolation between latent vectors produced artifacts, not smooth geological transitions.
+**Diagnosis:** A deterministic bottleneck gives no continuity guarantee — nearby latent points could decode to very different images, causing false positives in Isolation Forest scoring.
+**Fix:** Split the encoder's final layer into `fc_mu`/`fc_logvar` heads, added the reparameterization trick ($z = \mu + \sigma \cdot \epsilon$), and added KL-divergence regularization toward $\mathcal{N}(0, I)$.
+**Outcome:** *Training diverged on epoch 1 — KL term exploded to ~6×10⁸ due to an unclamped `logvar` in the reparameterization step. Not retrained to completion given time constraints; no v4 checkpoint exists. Architectural intent and diagnosis documented here regardless, per the fix described above.*
+
+#### Iteration 5: v5 — Multi-Scale Edge-Aware Compound VAE
+**Symptom:** VAE bottleneck acted as a low-pass filter — sharp splicing artifacts were smoothed over, hurting per-pixel residual heatmap quality.
+**Diagnosis:** No direct high-frequency pathway from encoder to decoder; single-scale SSIM insufficient to penalize blur at multiple resolutions.
+**Fix:** Added U-Net-style skip connections at 4 matching resolutions (113/56/28/14), upgraded SSIM→MS-SSIM (multi-scale), added a custom Sobel-gradient L1 edge loss, applied Kaiming-normal init tuned for LeakyReLU, and introduced β-annealing (linear ramp to β_max=0.005 over the first half of training) to stabilize KL regularization after the v4 instability.
+**Outcome:** Best completed model — lowest final MSE (0.000285) and SSIM loss (0.047439) of all versions trained to completion. However, final KL divergence converged to ≈0.0, consistent with posterior collapse despite the annealing mitigation — an open finding rather than a fully resolved issue (see Section 5.1 note).
 ## 6. Conclusion
 
 Team Astra's pipeline successfully implements all four phases of the Mars HiRISE Unsupervised Anomaly Detection Challenge:
