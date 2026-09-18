@@ -64,7 +64,7 @@ $$L_{\text{total}} = \alpha \cdot L_{\text{MSE}} + \beta \cdot (1 - \text{SSIM})
 
 <img width="1494" height="744" alt="image" src="https://github.com/user-attachments/assets/a048c84e-48e0-42b1-86c9-c87c8268d455" />
 
-<img width="1494" height="744" alt="image" src="https://github.com/user-attachments/assets/a048c84e-48e0-42b1-86c9-c87c8268d455" />
+
 
 
 ### 2.4 Latent Visualization
