@@ -51,13 +51,15 @@ $$L_{\text{total}} = \alpha \cdot L_{\text{MSE}} + \beta \cdot (1 - \text{SSIM})
 
 ### 2.3 Training Results
 
-*(Insert training summary table and loss curves after execution)*
+<img width="1494" height="744" alt="image" src="https://github.com/user-attachments/assets/a048c84e-48e0-42b1-86c9-c87c8268d455" />
+
 
 ### 2.4 Latent Visualization
 
 t-SNE and UMAP embeddings of the latent vectors reveal structural patterns in the data. Anomalous images tend to cluster separately or appear as outliers in the embedding space.
 
-*(Insert t-SNE and UMAP plots after execution)*
+<img width="1002" height="812" alt="image" src="https://github.com/user-attachments/assets/ef89ca16-97a1-4f1a-96b0-169036a4a0bd" />
+
 
 ---
 
@@ -91,7 +93,8 @@ per Iglewicz & Hoaglin (1993).
 #### Consensus Voting
 An image is flagged as anomalous if identified by **≥2 of 3** methods.
 
-*(Insert score distribution plots and threshold analysis after execution)*
+<img width="1590" height="498" alt="image" src="https://github.com/user-attachments/assets/91441ff0-82df-435b-a1f6-0cb892eb4c81" />
+
 
 ---
 
@@ -106,7 +109,7 @@ For each of the top-5 anomalous images (strictly exceeding the threshold):
 
 ### 4.2 Geological Hypothesis Report
 
-*(Insert geological hypothesis table and heatmap figures after execution)*
+<img width="2236" height="788" alt="image" src="https://github.com/user-attachments/assets/93aa3fdd-939c-46e6-8e72-7abd9a2e089a" />
 
 ### 4.3 Error Pattern Classification
 
