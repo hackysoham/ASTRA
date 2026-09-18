@@ -1,7 +1,7 @@
 # Mars HiRISE Unsupervised Anomaly Detection Pipeline — Final Report
 
 **Team Astra** | National Students' Space Challenge (NSSC 2026) | IIT Kharagpur  
-**Collaborators:** SarthakXSingh09, R15HV, Shivam3473, aditohates-bugs, Dhairya646
+
 
 ---
 
