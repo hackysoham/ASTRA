@@ -51,16 +51,15 @@ $$L_{\text{total}} = \alpha \cdot L_{\text{MSE}} + \beta \cdot (1 - \text{SSIM})
 
 ### 2.3 Training Results
 
+| Version | Type | Latent Dim | MSE (↓) | SSIM Score (↑) | Epochs |
+|---------|------|-----------|-----------|-------------------|--------|
+| v1 | CAE | 128 | 0.004646 | 0.5770 | 49 |
+| v2 | CAE + BN | 128 | 0.038159 | 0.4886 | 14 (early-stopped) |
+| v3 | CAE + LeakyReLU | 256 | 0.004942 | 0.6260 | 31 |
+| v4 | VAE | 256 | *Not completed* — training diverged (KL exploded on epoch 1); no checkpoint saved | | |
+| v5 | β-VAE + Skip | 256 | **0.000285** | **0.9526** | 50 |
 
-| Version | Type | Latent Dim | Best Val Loss | Final MSE | Final SSIM Loss | Epochs |
-|---------|------|-----------|----------------|-----------|-------------------|--------|
-| v1 | CAE | 128 | 0.004646 | 0.004646 | 0.422971 | 49 |
-| v2 | CAE + BN | 128 | 0.274803 | 0.038159 | 0.511446 | 14 (early-stopped) |
-| v3 | CAE + LeakyReLU | 256 | 0.189463 | 0.004942 | 0.373983 | 31 |
-| v4 | VAE | 256 | *Not completed* — training diverged (KL term exploded on epoch 1); no checkpoint saved | | | |
-| v5 | β-VAE + Skip | 256 | 0.023862 | 0.000285 | 0.047439 | 50 |
-
-**v5 was selected as the final model** for Phases 2–3, based on its substantially lower final MSE and SSIM loss compared to all other completed versions.
+**v5 was selected as the final model** for Phases 2–3, achieving both the lowest reconstruction error (MSE) and the highest structural similarity (SSIM ≈ 0.95) among all versions trained to completion.
 
 <img width="1494" height="744" alt="image" src="https://github.com/user-attachments/assets/a048c84e-48e0-42b1-86c9-c87c8268d455" />
 
